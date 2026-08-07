@@ -14,6 +14,7 @@ import {
     // Bell,
     Person,
     ArrowRightFromSquare,
+    Gear,
 } from "@gravity-ui/icons";
 import { Button, Drawer } from "@heroui/react";
 import { authClient } from "@/lib/auth-client";
@@ -45,8 +46,11 @@ export default function DashboardSidebar({ user, cartCount = 0 }: DashboardSideb
         { icon: LayoutCellsLarge, label: "Overview", href: "/dashboard/admin" },
         { icon: Person, label: "Users", href: "/dashboard/admin/users" },
         { icon: ShoppingCart, label: "Orders", href: "/dashboard/admin/orders" },
-        { icon: Plus, label: "Add Item", href: "/dashboard/admin/items/add" },
-        { icon: ListCheck, label: "Manage Items", href: "/dashboard/admin/items" },
+        { icon: Plus, label: "Add Pizza", href: "/dashboard/admin/items/add" },
+        { icon: ListCheck, label: "Manage Pizzas", href: "/dashboard/admin/items" },
+        { icon: Plus, label: "Add Making Item", href: "/dashboard/admin/inventory/add" },
+        { icon: ListCheck, label: "Manage Making Items", href: "/dashboard/admin/inventory" },
+        { icon: Gear, label: "Settings", href: "/dashboard/admin/settings" },
         { icon: Person, label: "Profile", href: "/dashboard/profile" },
     ];
 

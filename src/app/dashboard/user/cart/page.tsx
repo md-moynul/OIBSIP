@@ -1,6 +1,7 @@
 // app/cart/page.tsx
 import { getCart } from '@/lib/api/cart';
 import { getServerSession } from '@/lib/sessions/serverSession';
+import { getSettings } from '@/lib/api/settings';
 import { Metadata } from 'next';
 import CartClient from './CartClient';
 
@@ -28,9 +29,20 @@ interface CartData {
 
 const CartPage = async () => {
   const user = await getServerSession();
-  const cart: CartData = await getCart(user?.id || '');
+  const [cart, settingsRes] = await Promise.all([
+    getCart(user?.id || ''),
+    getSettings(),
+  ]);
+  const settings = settingsRes?.data || { freeDeliveryThreshold: 1500, deliveryFee: 60 };
 
-  return <CartClient initialCart={cart} userId={user?.id || ''} />;
+  return (
+    <CartClient
+      initialCart={cart as CartData}
+      userId={user?.id || ''}
+      freeDeliveryThreshold={settings.freeDeliveryThreshold ?? 1500}
+      deliveryFee={settings.deliveryFee ?? 60}
+    />
+  );
 };
 
 export default CartPage;

@@ -1,11 +1,15 @@
-import React from 'react';
+import { getAllInventoryItems } from '@/lib/api/inventory';
+import InventoryClient from './InventoryClient';
+import { Metadata } from 'next';
 
-const page = () => {
-    return (
-        <div className="mx-auto max-w-5xl px-6 py-10 min-h-screen">
-            <p  className="text-4xl font-bold text-primary"> This feature will be available soon</p>
-        </div>
-    );
+export const metadata: Metadata = {
+  title: 'Pizza Making Items (Inventory) | PizzaPoint Admin',
+  description: 'Manage raw pizza ingredients and making stock levels',
 };
 
-export default page;
+export default async function AdminInventoryPage() {
+  const itemsRes = await getAllInventoryItems().catch(() => ({ data: [] }));
+  const items = itemsRes?.data || [];
+
+  return <InventoryClient initialItems={items} />;
+}

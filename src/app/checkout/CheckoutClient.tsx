@@ -40,11 +40,11 @@ interface UserSession {
 interface CheckoutClientProps {
   initialCart: CartData | null;
   user: UserSession | null;
+  freeDeliveryThreshold?: number;
+  deliveryFee?: number;
 }
 
-const DELIVERY_FEE = 60;
-
-export default function CheckoutClient({ initialCart, user }: CheckoutClientProps) {
+export default function CheckoutClient({ initialCart, user, freeDeliveryThreshold = 1500, deliveryFee: feeFromProps = 60 }: CheckoutClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isCanceled = searchParams.get('canceled') === 'true';
@@ -100,7 +100,8 @@ export default function CheckoutClient({ initialCart, user }: CheckoutClientProp
   }, [cart]);
 
   const subtotal = cart?.items?.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0) ?? 0;
-  const deliveryFee = cart?.items?.length ? DELIVERY_FEE : 0;
+  const freeDelivery = subtotal > 0 && subtotal >= freeDeliveryThreshold;
+  const deliveryFee = cart?.items?.length ? (freeDelivery ? 0 : feeFromProps) : 0;
   const total = subtotal + deliveryFee;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

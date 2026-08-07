@@ -38,13 +38,13 @@ interface Pizza {
 interface CartClientProps {
   initialCart: CartData;
   userId: string;
+  freeDeliveryThreshold?: number;
+  deliveryFee?: number;
 }
-
-const DELIVERY_FEE = 60;
 
 const lineKey = (item: CartItem) => `${item.pizzaId}-${item.size}`;
 
-const CartClient = ({ initialCart, userId }: CartClientProps) => {
+const CartClient = ({ initialCart, userId, freeDeliveryThreshold = 1500, deliveryFee = 60 }: CartClientProps) => {
   const [cart, setCart] = useState<CartData>(initialCart);
   const [pizzas, setPizzas] = useState<Record<string, Pizza>>({});
   const [loading, setLoading] = useState(true);
@@ -93,7 +93,9 @@ const CartClient = ({ initialCart, userId }: CartClientProps) => {
     [cart]
   );
 
-  const total = subtotal + (cart?.items?.length ? DELIVERY_FEE : 0);
+  const freeDelivery = subtotal > 0 && subtotal >= freeDeliveryThreshold;
+  const effectiveDeliveryFee = freeDelivery ? 0 : deliveryFee;
+  const total = subtotal + (cart?.items?.length ? effectiveDeliveryFee : 0);
   const itemCount = cart?.items?.reduce((acc, i) => acc + i.quantity, 0) ?? 0;
 
   const updateQuantity = async (item: CartItem, delta: number) => {
@@ -383,17 +385,19 @@ const CartClient = ({ initialCart, userId }: CartClientProps) => {
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>Delivery fee</span>
-                <span className="text-gray-900">৳{DELIVERY_FEE.toFixed(2)}</span>
+                <span className={freeDelivery ? "text-green-600 font-semibold" : "text-gray-900"}>
+                  {freeDelivery ? 'FREE 🎉' : `৳${deliveryFee.toFixed(2)}`}
+                </span>
               </div>
-              {subtotal > 500 && (
+              {freeDelivery && (
                 <div className="flex justify-between text-green-600 text-xs">
-                  <span>🎉 Free delivery eligible</span>
-                  <span>You saved ৳{DELIVERY_FEE.toFixed(2)}</span>
+                  <span>🎉 Free delivery on orders ৳{freeDeliveryThreshold}+</span>
+                  <span>You saved ৳{deliveryFee.toFixed(2)}</span>
                 </div>
               )}
-              {subtotal < 500 && subtotal > 0 && (
+              {!freeDelivery && subtotal > 0 && (
                 <div className="flex justify-between text-orange-500 text-xs">
-                  <span>Add ৳{(500 - subtotal).toFixed(2)} more for free delivery</span>
+                  <span>Add ৳{(freeDeliveryThreshold - subtotal).toFixed(2)} more for free delivery</span>
                 </div>
               )}
             </div>
