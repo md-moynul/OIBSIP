@@ -60,6 +60,72 @@ async function run() {
     const usersCollection = db.collection("user");
     const pizzaCollection = db.collection("pizza");
     const cartCollection = db.collection("cart");
+    const ordersCollection = db.collection("orders");
+
+    // Order endpoints
+    app.post('/api/orders', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const orderData = req.body;
+        const decodedToken = (req as any).userid;
+        const userId = decodedToken?.sub || orderData.userId;
+
+        if (!userId) {
+          return res.status(400).json({ error: "User ID is required" });
+        }
+
+        const newOrder = {
+          ...orderData,
+          userId,
+          status: orderData.status || "Paid",
+          deliveryStatus: orderData.deliveryStatus || "Cooking",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await ordersCollection.insertOne(newOrder);
+        return res.status(201).json({ success: true, message: "Order created successfully", orderId: result.insertedId, result });
+      } catch (error) {
+        console.error("Create Order Error:", error);
+        return res.status(500).json({ success: false, error: "Failed to create order" });
+      }
+    });
+
+    // Update order delivery status
+    app.patch('/api/orders/status/:id', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const { id } = req.params;
+        const { deliveryStatus } = req.body;
+        const result = await ordersCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { deliveryStatus, updatedAt: new Date() } }
+        );
+        return res.json({ success: true, message: "Delivery status updated successfully", result });
+      } catch (error) {
+        console.error("Update Order Status Error:", error);
+        return res.status(500).json({ success: false, error: "Failed to update status" });
+      }
+    });
+
+    app.get('/api/orders/user/:userId', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const userId = req.params.userId;
+        const orders = await ordersCollection.find({ userId }).sort({ createdAt: -1 }).toArray();
+        return res.json({ success: true, data: orders });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch orders" });
+      }
+    });
+
+    app.get('/api/orders/all', async (req: Request, res: Response) => {
+      try {
+        const orders = await ordersCollection.find({}).sort({ createdAt: -1 }).toArray();
+        const totalOrders = orders.length;
+        const totalRevenue = orders.reduce((sum: number, order: any) => sum + (Number(order.totalPrice) || 0), 0);
+        return res.json({ success: true, data: orders, totalOrders, totalRevenue });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch all orders" });
+      }
+    });
 
     // Get all users
     app.get("/api/users", verifyToken, async (req: Request, res: Response) => {
