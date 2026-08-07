@@ -184,16 +184,68 @@ async function run() {
           return res.status(400).json({ error: "User ID is required" });
         }
 
+        // Fetch user's cart to get full item details (including customIngredients and pizzaId)
+        const cart = await cartCollection.findOne({ userId });
+        if (!cart || !cart.items || cart.items.length === 0) {
+          return res.status(400).json({ error: "Cart is empty or not found. Cannot create order." });
+        }
+
         const newOrder = {
           ...orderData,
           userId,
+          items: cart.items, // Use the full items from cart, overriding the simplified Stripe items
           status: orderData.status || "Paid",
           deliveryStatus: orderData.deliveryStatus || "Cooking",
           createdAt: new Date(),
           updatedAt: new Date()
         };
 
+        // Inventory Deduction
+        const sizeMultipliers: Record<string, number> = {
+          'Small': 1,
+          'Medium': 1.25,
+          'Large': 1.5
+        };
+
+        for (const item of cart.items) {
+          const multiplier = sizeMultipliers[item.size] || 1;
+          const totalQtyMultiplier = item.quantity * multiplier;
+
+          let ingredientsToDeduct: any[] = [];
+
+          if (item.pizzaId && String(item.pizzaId).startsWith('custom-')) {
+            // Custom pizza: ingredients are stored directly in the cart item
+            if (item.customIngredients && Array.isArray(item.customIngredients)) {
+              ingredientsToDeduct = item.customIngredients;
+            }
+          } else if (item.pizzaId) {
+            // Standard pizza: fetch the recipe from pizzaCollection
+            let pid = item.pizzaId;
+            if (ObjectId.isValid(pid)) {
+              const pizza = await pizzaCollection.findOne({ _id: new ObjectId(pid) });
+              if (pizza && pizza.ingredients && Array.isArray(pizza.ingredients)) {
+                ingredientsToDeduct = pizza.ingredients;
+              }
+            }
+          }
+
+          // Deduct each ingredient
+          for (const ing of ingredientsToDeduct) {
+            if (ing.inventoryId && ObjectId.isValid(ing.inventoryId)) {
+              const deductAmount = (Number(ing.quantityUsed) || 1) * totalQtyMultiplier;
+              await inventoryCollection.updateOne(
+                { _id: new ObjectId(ing.inventoryId) },
+                { $inc: { quantity: -deductAmount } }
+              );
+            }
+          }
+        }
+
         const result = await ordersCollection.insertOne(newOrder);
+
+        // Clear the cart after successful order creation
+        await cartCollection.deleteOne({ userId });
+
         return res.status(201).json({ success: true, message: "Order created successfully", orderId: result.insertedId, result });
       } catch (error) {
         console.error("Create Order Error:", error);
