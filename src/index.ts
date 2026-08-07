@@ -61,6 +61,117 @@ async function run() {
     const pizzaCollection = db.collection("pizza");
     const cartCollection = db.collection("cart");
     const ordersCollection = db.collection("orders");
+    const inventoryCollection = db.collection("inventory");
+    const settingsCollection = db.collection("settings");
+
+    // ==========================================
+    // Settings Endpoints (admin-configurable)
+    // ==========================================
+    // Ensure a default settings document exists
+    const existingSettings = await settingsCollection.findOne({ key: "global" });
+    if (!existingSettings) {
+      await settingsCollection.insertOne({ key: "global", freeDeliveryThreshold: 1500, deliveryFee: 60, updatedAt: new Date() });
+    }
+
+    app.get('/api/settings', async (req: Request, res: Response) => {
+      try {
+        const settings = await settingsCollection.findOne({ key: "global" });
+        return res.json({ success: true, data: settings });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch settings" });
+      }
+    });
+
+    app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const updates = req.body;
+        delete updates._id;
+        delete updates.key;
+        const result = await settingsCollection.updateOne(
+          { key: "global" },
+          { $set: { ...updates, updatedAt: new Date() } },
+          { upsert: true }
+        );
+        return res.json({ success: true, message: "Settings updated successfully", result });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to update settings" });
+      }
+    });
+
+    // Inventory / Pizza Making Items Endpoints
+    app.get('/api/inventory/all', async (req: Request, res: Response) => {
+      try {
+        const items = await inventoryCollection.find({}).toArray();
+        return res.json({ success: true, data: items });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch inventory" });
+      }
+    });
+
+    app.post('/api/inventory/add', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const item = req.body;
+        const newItem = {
+          ...item,
+          quantity: Number(item.quantity) || 0,
+          minThreshold: Number(item.minThreshold) || 10,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+        const result = await inventoryCollection.insertOne(newItem);
+        return res.status(201).json({ success: true, message: "Ingredient added successfully", result });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to add ingredient" });
+      }
+    });
+
+    app.delete('/api/inventory/:id', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const id = req.params.id as string;
+        const result = await inventoryCollection.deleteOne({ _id: new ObjectId(id) });
+        return res.json({ success: true, message: "Ingredient deleted successfully", result });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to delete ingredient" });
+      }
+    });
+
+    app.patch('/api/inventory/:id', verifyToken, async (req: Request, res: Response) => {
+      try {
+        const id = req.params.id as string;
+        const updateData = req.body;
+        const result = await inventoryCollection.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { ...updateData, updatedAt: new Date() } }
+        );
+        return res.json({ success: true, message: "Ingredient updated successfully", result });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to update ingredient" });
+      }
+    });
+
+    // Builder items — return inventory grouped by category for the pizza builder
+    app.get('/api/inventory/builder-items', async (req: Request, res: Response) => {
+      try {
+        const items = await inventoryCollection.find({}).toArray();
+        // Group by category
+        const grouped: Record<string, any[]> = {};
+        for (const item of items) {
+          const cat = (item.category || 'other').toLowerCase();
+          if (!grouped[cat]) grouped[cat] = [];
+          grouped[cat].push({
+            id: String(item._id),
+            label: item.name,
+            quantity: item.quantity || 0,
+            unit: item.unit || '',
+            price: item.price || 0,
+            inStock: (item.quantity || 0) > (item.minThreshold || 0),
+          });
+        }
+        return res.json({ success: true, data: grouped });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to fetch builder items" });
+      }
+    });
 
     // Order endpoints
     app.post('/api/orders', verifyToken, async (req: Request, res: Response) => {
@@ -93,7 +204,7 @@ async function run() {
     // Update order delivery status
     app.patch('/api/orders/status/:id', verifyToken, async (req: Request, res: Response) => {
       try {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { deliveryStatus } = req.body;
         const result = await ordersCollection.updateOne(
           { _id: new ObjectId(id) },
@@ -222,10 +333,26 @@ async function run() {
     });
     // Get a single pizza
     app.get('/api/pizza/:id', async (req: Request, res: Response) => {
-      const pizzaId = req.params.id as string;
-      const query: object = { _id: new ObjectId(pizzaId) };
-      const pizza = await pizzaCollection.findOne(query);
-      res.json(pizza);
+      try {
+        const pizzaId = req.params.id as string;
+        if (!ObjectId.isValid(pizzaId)) {
+          return res.json({
+            _id: pizzaId,
+            name: pizzaId.startsWith("custom-") ? "Custom Pizza" : "Pizza " + pizzaId.slice(-6),
+            category: "Custom Build",
+            price: 0,
+            imageUrl: ""
+          });
+        }
+        const query: object = { _id: new ObjectId(pizzaId) };
+        const pizza = await pizzaCollection.findOne(query);
+        if (!pizza) {
+          return res.status(404).json({ error: "Pizza not found" });
+        }
+        return res.json(pizza);
+      } catch (error) {
+        return res.status(500).json({ error: "Failed to fetch pizza" });
+      }
     });
     //  delete pizza
     app.delete('/api/pizza/:id', verifyToken, async (req: Request, res: Response) => {
