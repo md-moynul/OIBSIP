@@ -54,49 +54,61 @@ app.get("/", (req: Request, res: Response) => {
   res.send("PizzaPoint Server is running! 🚀");
 });
 
-async function run() {
+const db = client.db("pizzapoint-db");
+const usersCollection = db.collection("user");
+const pizzaCollection = db.collection("pizza");
+const cartCollection = db.collection("cart");
+const ordersCollection = db.collection("orders");
+const inventoryCollection = db.collection("inventory");
+const settingsCollection = db.collection("settings");
+
+let settingsInitPromise: Promise<void> | null = null;
+async function ensureDefaultSettings() {
+  if (!settingsInitPromise) {
+    settingsInitPromise = (async () => {
+      try {
+        const existingSettings = await settingsCollection.findOne({ key: "global" });
+        if (!existingSettings) {
+          await settingsCollection.insertOne({ key: "global", freeDeliveryThreshold: 1500, deliveryFee: 60, updatedAt: new Date() });
+        }
+      } catch (e) {
+        console.error("Failed to initialize default settings:", e);
+        settingsInitPromise = null;
+      }
+    })();
+  }
+  return settingsInitPromise;
+}
+
+// ==========================================
+// Settings Endpoints (admin-configurable)
+// ==========================================
+app.get('/api/settings', async (req: Request, res: Response) => {
   try {
-    const db = client.db("pizzapoint-db");
-    const usersCollection = db.collection("user");
-    const pizzaCollection = db.collection("pizza");
-    const cartCollection = db.collection("cart");
-    const ordersCollection = db.collection("orders");
-    const inventoryCollection = db.collection("inventory");
-    const settingsCollection = db.collection("settings");
+    await ensureDefaultSettings();
+    const settings = await settingsCollection.findOne({ key: "global" });
+    return res.json({ success: true, data: settings });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to fetch settings" });
+  }
+});
 
-    // ==========================================
-    // Settings Endpoints (admin-configurable)
-    // ==========================================
-    // Ensure a default settings document exists
-    const existingSettings = await settingsCollection.findOne({ key: "global" });
-    if (!existingSettings) {
-      await settingsCollection.insertOne({ key: "global", freeDeliveryThreshold: 1500, deliveryFee: 60, updatedAt: new Date() });
-    }
-
-    app.get('/api/settings', async (req: Request, res: Response) => {
-      try {
-        const settings = await settingsCollection.findOne({ key: "global" });
-        return res.json({ success: true, data: settings });
-      } catch (error) {
-        return res.status(500).json({ success: false, error: "Failed to fetch settings" });
-      }
-    });
-
-    app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
-      try {
-        const updates = req.body;
-        delete updates._id;
-        delete updates.key;
-        const result = await settingsCollection.updateOne(
-          { key: "global" },
-          { $set: { ...updates, updatedAt: new Date() } },
-          { upsert: true }
-        );
-        return res.json({ success: true, message: "Settings updated successfully", result });
-      } catch (error) {
-        return res.status(500).json({ success: false, error: "Failed to update settings" });
-      }
-    });
+app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
+  try {
+    await ensureDefaultSettings();
+    const updates = req.body;
+    delete updates._id;
+    delete updates.key;
+    const result = await settingsCollection.updateOne(
+      { key: "global" },
+      { $set: { ...updates, updatedAt: new Date() } },
+      { upsert: true }
+    );
+    return res.json({ success: true, message: "Settings updated successfully", result });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: "Failed to update settings" });
+  }
+});
 
     // Inventory / Pizza Making Items Endpoints
     app.get('/api/inventory/all', async (req: Request, res: Response) => {
@@ -682,18 +694,11 @@ async function run() {
       }
     });
 
-    app.listen(port, () => {
-      console.log(`Example app listening on port ${port}`);
-    });
-  } catch (error) {
-    console.error("MongoDB connection failed ❌", error);
-    // Don't call process.exit in serverless — log and let the request fail gracefully
-    console.error("Server will respond with errors until DB reconnects.");
-  }
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`PizzaPoint Server listening on port ${port}`);
+  });
 }
-
-// Start connection (non-blocking for serverless cold starts)
-run().catch(console.dir);
 
 // Export app for Vercel serverless handler
 export default app;
