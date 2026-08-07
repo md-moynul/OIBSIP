@@ -1,4 +1,13 @@
+import { constructMetadata } from '@/lib/metadata';
 import React from 'react';
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Dashboard | Admin | Alerts | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 const page = () => {
     return (

@@ -1,12 +1,13 @@
+import { constructMetadata } from '@/lib/metadata';
 import { getOrdersByUserId } from '@/lib/api/orders';
 import { getServerSession } from '@/lib/sessions/serverSession';
 import UserOrdersClient from './UserOrdersClient';
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: 'My Orders & Delivery Status | PizzaPoint',
   description: 'Track the live delivery status of your pizza orders',
-};
+});
 
 export default async function UserOrdersPage() {
   const user = await getServerSession();

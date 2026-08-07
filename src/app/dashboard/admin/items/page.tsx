@@ -1,6 +1,15 @@
+import { constructMetadata } from '@/lib/metadata';
 // app/dashboard/admin/items/page.tsx
 import { getAllPizzas } from "@/lib/api/pizza";
 import ItemsTable from "@/components/dashboard/ItemsTable";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Dashboard | Admintems | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 const AllItemsPage = async () => {
   const pizza = await getAllPizzas();

@@ -1,6 +1,15 @@
+import { constructMetadata } from '@/lib/metadata';
 import { getUser } from '@/lib/api/user';
 import React from 'react';
 import UserTable, { User } from './UserTable'; // Adjust path if necessary
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Dashboard | Admin | Users | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 export default async function Page() {
     // Assuming getUser() returns an array of users (e.g. User[])

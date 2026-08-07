@@ -1,13 +1,14 @@
+import { constructMetadata } from '@/lib/metadata';
 import { getCart } from '@/lib/api/cart';
 import { getServerSession } from '@/lib/sessions/serverSession';
 import { getSettings } from '@/lib/api/settings';
 import CheckoutClient from './CheckoutClient';
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: 'Checkout | PizzaPoint',
   description: 'Complete your order delivery details and payment',
-};
+});
 
 export default async function CheckoutPage() {
   const user = await getServerSession();

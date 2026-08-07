@@ -1,6 +1,15 @@
+import { constructMetadata } from '@/lib/metadata';
 import Link from "next/link";
 import { ShieldExclamation } from "@gravity-ui/icons";
 import { getServerSession } from "@/lib/sessions/serverSession";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Unauthorized | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 const page = async () => {
     const user = await getServerSession();

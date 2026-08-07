@@ -1,7 +1,16 @@
+import { constructMetadata } from '@/lib/metadata';
 import Image from "next/image";
 import {  Calendar } from "@gravity-ui/icons";
 import EditProfileDialog from "./EditProfileDialog";
 import { getServerSession } from "@/lib/sessions/serverSession";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Dashboard | Profile | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 
 

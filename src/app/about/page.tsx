@@ -1,7 +1,16 @@
+import { constructMetadata } from '@/lib/metadata';
 // app/about/page.tsx
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@heroui/react";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'About | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 const stats = [
   { label: "Avg delivery", value: "28 min" },

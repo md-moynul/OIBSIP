@@ -7,6 +7,13 @@ import Testimonials from "@/components/home/Testimonials";
 import FAQ from "@/components/home/FAQ";
 import Newsletter from "@/components/home/Newsletter";
 import CTA from "@/components/home/CTA";
+import { Metadata } from 'next';
+
+
+export const metadata: Metadata = {
+  title: 'PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+};
 
 interface HomePageProps {
   searchParams: Promise<{ page?: string; limit?: string }> | { page?: string; limit?: string };

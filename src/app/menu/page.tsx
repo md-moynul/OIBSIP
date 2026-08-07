@@ -1,7 +1,16 @@
+import { constructMetadata } from '@/lib/metadata';
 import { getAllPizzas } from "@/lib/api/pizza";
 import MenuBrowser from "@/components/menu/MenuBrowser";
 import PizzaCard, { type Pizza } from "@/components/menu/PizzaCard";
 import PizzaPagination from "@/components/home/Pagination";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Menu | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 
 interface MenuPageProps {

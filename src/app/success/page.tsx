@@ -1,12 +1,13 @@
+import { constructMetadata } from '@/lib/metadata';
 import { redirect } from 'next/navigation';
 import { stripe } from '@/lib/stripe';
 import SuccessClient from './SuccessClient';
 import { Metadata } from 'next';
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: 'Order Confirmed | PizzaPoint',
   description: 'Your pizza order has been placed successfully!',
-};
+});
 
 interface SuccessPageProps {
   searchParams: Promise<{ session_id?: string }> | { session_id?: string };

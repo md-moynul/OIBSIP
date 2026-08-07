@@ -1,3 +1,4 @@
+import { constructMetadata } from '@/lib/metadata';
 // app/dashboard/admin/page.tsx
 import OverviewBarChart from "@/components/dashboard/OverviewBarChart";
 import { getAllPizzaWithoutPagination } from "@/lib/api/pizza";
@@ -27,6 +28,14 @@ function StatCard({
 }
 
 import { getAllOrders } from "@/lib/api/orders";
+import { Metadata } from 'next';
+
+
+export const metadata = constructMetadata({
+  title: 'Dashboard | Admin | PizzaPoint',
+  description: 'PizzaPoint - Fresh and Delicious Pizza',
+});
+
 
 const AdminOverviewPage = async () => {
   // Fetching existing APIs safely

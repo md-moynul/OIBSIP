@@ -1,11 +1,12 @@
+import { constructMetadata } from '@/lib/metadata';
 import { Metadata } from 'next';
 import { getSettings } from '@/lib/api/settings';
 import AdminSettingsClient from './AdminSettingsClient';
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: 'Store Settings | PizzaPoint Admin',
   description: 'Configure store settings including free delivery threshold',
-};
+});
 
 export default async function AdminSettingsPage() {
   const res = await getSettings();

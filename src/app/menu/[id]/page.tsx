@@ -1,9 +1,40 @@
+import { constructMetadata } from '@/lib/metadata';
 // app/menu/[id]/page.tsx
 import PurchasePanel from "@/components/menu/PurchasePanel";
 import { getPizzaById } from "@/lib/api/pizza";
 import { getServerSession } from "@/lib/sessions/serverSession";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { Metadata } from 'next';
+
+
+export async function generateMetadata({
+  params,
+}: Readonly<{ params: Promise<{ id: string }> | { id: string } }>): Promise<Metadata> {
+  const resolvedParams = await params;
+  const id = resolvedParams?.id;
+  
+  if (!id) {
+    return constructMetadata({
+      title: 'Pizza Not Found | PizzaPoint',
+    });
+  }
+
+  const pizza = await getPizzaById(id);
+  
+  if (!pizza) {
+    return constructMetadata({
+      title: 'Pizza Not Found | PizzaPoint',
+      description: 'The requested pizza could not be found.',
+    });
+  }
+  
+  return constructMetadata({
+    title: `${pizza.name} | PizzaPoint`,
+    description: pizza.shortDescription || 'PizzaPoint - Fresh and Delicious Pizza',
+  });
+}
+
 
 const PizzaDetailsPage = async ({
   params,

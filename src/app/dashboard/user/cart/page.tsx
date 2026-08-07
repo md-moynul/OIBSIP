@@ -1,3 +1,4 @@
+import { constructMetadata } from '@/lib/metadata';
 // app/cart/page.tsx
 import { getCart } from '@/lib/api/cart';
 import { getServerSession } from '@/lib/sessions/serverSession';
@@ -5,10 +6,10 @@ import { getSettings } from '@/lib/api/settings';
 import { Metadata } from 'next';
 import CartClient from './CartClient';
 
-export const metadata: Metadata = {
+export const metadata = constructMetadata({
   title: 'Your Cart | PizzaPoint',
   description: 'Review your pizza orders and proceed to checkout',
-};
+});
 
 interface CartItem {
   pizzaId: string;
