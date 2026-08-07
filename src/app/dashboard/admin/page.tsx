@@ -26,14 +26,16 @@ function StatCard({
   );
 }
 
+import { getAllOrders } from "@/lib/api/orders";
+
 const AdminOverviewPage = async () => {
   // Fetching existing APIs safely
   const users = await getUser().catch(() => []);
   const pizzas = await getAllPizzaWithoutPagination().catch(() => []);
+  const ordersRes = await getAllOrders().catch(() => ({ totalOrders: 0, totalRevenue: 0 }));
 
-  // Dummy data since Orders API is not implemented yet
-  const totalOrders = 0;
-  const totalRevenue = 0;
+  const totalOrders = ordersRes?.totalOrders ?? 0;
+  const totalRevenue = ordersRes?.totalRevenue ?? 0;
 
   const cards = [
     {

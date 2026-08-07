@@ -44,23 +44,17 @@ export default function DashboardSidebar({ user, cartCount = 0 }: DashboardSideb
     const adminNavItems: NavItem[] = [
         { icon: LayoutCellsLarge, label: "Overview", href: "/dashboard/admin" },
         { icon: Person, label: "Users", href: "/dashboard/admin/users" },
-        // { icon: ShoppingCart, label: "Orders", href: "/dashboard/admin/orders" },
-        // { icon: Box, label: "Inventory", href: "/dashboard/admin/inventory" },
+        { icon: ShoppingCart, label: "Orders", href: "/dashboard/admin/orders" },
         { icon: Plus, label: "Add Item", href: "/dashboard/admin/items/add" },
         { icon: ListCheck, label: "Manage Items", href: "/dashboard/admin/items" },
-        // { icon: Bell, label: "Stock Alerts", href: "/dashboard/admin/alerts" },
         { icon: Person, label: "Profile", href: "/dashboard/profile" },
     ];
 
     const customerNavItems: NavItem[] = [
-        // { icon: LayoutCellsLarge, label: "Overview", href: "/dashboard/user" },
-        // { icon: Box, label: "My Orders", href: "/dashboard/user/orders" },
-        // { icon: ListCheck, label: "Track Order", href: "/dashboard/user/order" },
-         { icon: Plus, label: "Build Pizza", href: "/dashboard/user/build" },
+        { icon: ListCheck, label: "My Orders & Delivery", href: "/dashboard/user/orders" },
+        { icon: Plus, label: "Build Pizza", href: "/dashboard/user/build" },
         { icon: ShoppingCart, label: "Cart", href: "/dashboard/user/cart" },
-        // { icon: Bell, label: "Notifications", href: "/dashboard/user/alerts" },
         { icon: Person, label: "Profile", href: "/dashboard/profile" },
-        // { icon: Gear, label: "Settings", href: "/dashboard/user/settings" },
     ];
 
     const navItems = isAdmin ? adminNavItems : customerNavItems;

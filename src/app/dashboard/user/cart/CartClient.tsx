@@ -416,7 +416,7 @@ const CartClient = ({ initialCart, userId }: CartClientProps) => {
             <div className="mt-4 flex justify-center gap-3 text-xs text-gray-400">
               <span className="flex items-center gap-1">🔒 Secure</span>
               <span className="flex items-center gap-1">🚚 Fast delivery</span>
-              <span className="flex items-center gap-1">💳 Razorpay</span>
+              <span className="flex items-center gap-1">💳 Stripe / Card</span>
             </div>
           </div>
         </div>

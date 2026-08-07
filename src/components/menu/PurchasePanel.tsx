@@ -19,8 +19,10 @@ interface Pizza {
 type QuantityMap = Record<number, number>;
 
 export default function PurchasePanel({ pizza ,userId }: { pizza: Pizza , userId: string }) {
-    const [quantities, setQuantities] = useState<QuantityMap>({});
+    // Default 1 quantity for Small (6") size (index 0)
+    const [quantities, setQuantities] = useState<QuantityMap>({ 0: 1 });
     const [isAdding, setIsAdding] = useState(false);
+    const [isBuyingNow, setIsBuyingNow] = useState(false);
     const router = useRouter();
 
     const basePrice = Number(pizza.price) || 0;
@@ -41,11 +43,13 @@ export default function PurchasePanel({ pizza ,userId }: { pizza: Pizza , userId
         quantity: quantities[i] ?? 0,
         unitPrice: getSizePrice(basePrice, size.multiplier),
     })).filter((line) => line.quantity > 0);
+
     const totalItems = selectedLines.reduce((sum, line) => sum + line.quantity, 0);
     const totalPrice = selectedLines.reduce(
         (sum, line) => sum + line.unitPrice * line.quantity,
         0
     );
+
     const handleAddToCart = async () => {
         if (selectedLines.length === 0) return;
         setIsAdding(true);
@@ -64,18 +68,46 @@ export default function PurchasePanel({ pizza ,userId }: { pizza: Pizza , userId
             };
             const res = await addToCart(cartData);
             if (res.success) {
-                toast.success("Pizza added to cart successfully")
+                toast.success("Pizza added to cart successfully");
                 window.dispatchEvent(new Event("cart-updated"));
             } else {
-                toast.error("Failed to add pizza to cart")
+                toast.error("Failed to add pizza to cart");
             }
+        } catch (e) {
+            toast.error("An error occurred while adding to cart");
         } finally {
             setIsAdding(false);
         }
     };
 
     const handleBuyNow = async () => {
-        router.push("/checkout");
+        if (selectedLines.length === 0) return;
+        setIsBuyingNow(true);
+        try {
+            const cartData = {
+                items: selectedLines.map((line) => ({
+                    pizzaId: pizza._id,
+                    size: line.size.label,
+                    inches: line.size.inches,
+                    unitPrice: line.unitPrice,
+                    quantity: line.quantity,
+                })),
+                userId: userId,
+                totalPrice: totalPrice,
+                pizzaId: pizza._id,
+            };
+            const res = await addToCart(cartData);
+            if (res.success) {
+                window.dispatchEvent(new Event("cart-updated"));
+                router.push("/checkout");
+            } else {
+                toast.error("Failed to process direct purchase");
+                setIsBuyingNow(false);
+            }
+        } catch (e) {
+            toast.error("An error occurred while processing checkout");
+            setIsBuyingNow(false);
+        }
     };
 
     return (
@@ -163,17 +195,17 @@ export default function PurchasePanel({ pizza ,userId }: { pizza: Pizza , userId
             <div className="mt-4 flex gap-3">
                 <Button
                     onPress={handleAddToCart}
-                    isDisabled={isAdding || selectedLines.length === 0}
+                    isDisabled={isAdding || isBuyingNow || selectedLines.length === 0}
                     className="flex-1 bg-background rounded-xl border-text py-2.5 font-semibold text-text"
                 >
                     {isAdding ? "Adding..." : "Add to cart"}
                 </Button>
                 <Button
                     onPress={handleBuyNow}
-                    isDisabled={isAdding || selectedLines.length === 0}
+                    isDisabled={isAdding || isBuyingNow || selectedLines.length === 0}
                     className="flex-1 rounded-xl bg-primary py-2.5 font-semibold text-white"
                 >
-                    Order now
+                    {isBuyingNow ? "Processing..." : "Order now"}
                 </Button>
             </div>
         </div>
