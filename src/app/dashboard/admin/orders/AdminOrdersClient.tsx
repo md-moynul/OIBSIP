@@ -104,12 +104,16 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Or
                       <p className="text-gray-500 line-clamp-1 max-w-xs">{order.customerAddress || 'N/A'}</p>
                     </td>
                     <td className="px-6 py-4 text-xs">
-                      {Array.isArray(order.items) ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-medium">
-                          {order.items.length} item(s)
-                        </span>
+                      {Array.isArray(order.items) && order.items.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {order.items.map((item, idx) => (
+                            <span key={idx} className="text-gray-700">
+                              <span className="font-semibold text-gray-900">{item.quantity}x</span> {item.name || item.description || 'Pizza Item'}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
-                        'N/A'
+                        <span className="text-gray-400">N/A</span>
                       )}
                     </td>
                     <td className="px-6 py-4 font-semibold text-primary">

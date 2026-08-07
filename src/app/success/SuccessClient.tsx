@@ -13,8 +13,10 @@ interface OrderSummary {
   customerPhone: string;
   customerAddress: string;
   notes?: string;
-  totalAmount: number;
-  currency: string;
+  totalAmount: number; // BDT
+  totalAmountUSD?: number;
+  currency: string; // BDT
+  paidCurrency?: string; // USD
   items: Array<{
     description: string;
     quantity: number;
@@ -25,14 +27,7 @@ interface OrderSummary {
 
 export default function SuccessClient({ summary }: { summary: OrderSummary }) {
   useEffect(() => {
-    // Clear user cart upon successful checkout
     if (summary.userId) {
-      clearCart(summary.userId)
-        .then(() => {
-          window.dispatchEvent(new Event('cart-updated'));
-        })
-        .catch((err) => console.error('Error clearing cart post-payment:', err));
-
       // Post order record to database
       createOrder({
         userId: summary.userId,
@@ -42,11 +37,17 @@ export default function SuccessClient({ summary }: { summary: OrderSummary }) {
         customerPhone: summary.customerPhone,
         customerAddress: summary.customerAddress,
         notes: summary.notes,
-        totalPrice: summary.totalAmount,
+        totalPrice: summary.totalAmount, // This remains BDT
+        totalPriceUSD: summary.totalAmountUSD,
         currency: summary.currency,
+        paidCurrency: summary.paidCurrency,
         items: summary.items,
         status: 'Paid',
-      }).catch((err) => console.error('Error saving order:', err));
+      })
+      .then(() => {
+        window.dispatchEvent(new Event('cart-updated'));
+      })
+      .catch((err) => console.error('Error saving order:', err));
     }
   }, [summary]);
 

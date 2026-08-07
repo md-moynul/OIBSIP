@@ -309,6 +309,12 @@ export default function BuildPizzaPage() {
             inches: size.inches,
             unitPrice,
             quantity,
+            customIngredients: [
+              { inventoryId: base.id, quantityUsed: 1 },
+              { inventoryId: sauce.id, quantityUsed: 1 },
+              { inventoryId: cheese.id, quantityUsed: 1 },
+              ...toppings.map(t => ({ inventoryId: t.id, quantityUsed: 1 }))
+            ]
           },
         ],
         totalPrice,

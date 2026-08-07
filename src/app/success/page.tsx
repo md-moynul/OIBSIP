@@ -37,6 +37,8 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     }));
 
     const metadata = session.metadata || {};
+    const totalAmountUSD = (session.amount_total || 0) / 100;
+    const totalAmountBDT = metadata.totalBdtAmount ? Number(metadata.totalBdtAmount) : totalAmountUSD;
 
     const summary = {
       sessionId: session.id,
@@ -45,8 +47,10 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       customerPhone: session.customer_details?.phone || metadata.customerPhone || '',
       customerAddress: metadata.customerAddress || '',
       notes: metadata.notes || '',
-      totalAmount: (session.amount_total || 0) / 100,
-      currency: session.currency?.toUpperCase() || 'USD',
+      totalAmount: totalAmountBDT,
+      totalAmountUSD: totalAmountUSD,
+      currency: 'BDT', // Display as BDT in the UI
+      paidCurrency: session.currency?.toUpperCase() || 'USD',
       items,
       userId: metadata.userId || undefined,
     };
