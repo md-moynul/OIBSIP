@@ -109,11 +109,6 @@ const OptionGrid = ({
                   Out of stock
                 </span>
               )}
-              {!disabled && (
-                <span className="text-[10px] text-gray-400">
-                  {o.quantity} {o.unit} in stock
-                </span>
-              )}
             </div>
             <span className="flex items-center gap-2">
               {(o.price ?? 0) > 0 && (
@@ -175,11 +170,6 @@ const MultiSelectGrid = ({
               {disabled && (
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-red-400">
                   Out of stock
-                </span>
-              )}
-              {!disabled && (
-                <span className="text-[10px] text-gray-400">
-                  {o.quantity} {o.unit} in stock
                 </span>
               )}
             </div>
