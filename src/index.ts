@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { MongoClient, ObjectId, ServerApiVersion } from "mongodb";
 import { createRemoteJWKSet, jwtVerify } from "jose-cjs";
+import { sendLowStockAlert, LowStockItem } from "./utils/mailer";
 
 dotenv.config();
 
@@ -80,6 +81,82 @@ async function ensureDefaultSettings() {
   return settingsInitPromise;
 }
 
+async function checkAndNotifyLowStock(database: any) {
+  try {
+    const invColl = database.collection("inventory");
+    const usrColl = database.collection("user");
+
+    const allItems = await invColl.find({}).toArray();
+    const lowStockItemsToNotify: LowStockItem[] = [];
+
+    for (const item of allItems) {
+      const qty = Number(item.quantity) || 0;
+      const minThreshold = Number(item.minThreshold) || 10;
+
+      if (qty <= minThreshold) {
+        if (!item.lowStockAlertSent) {
+          lowStockItemsToNotify.push({
+            _id: item._id,
+            name: item.name,
+            quantity: qty,
+            minThreshold: minThreshold,
+            unit: item.unit,
+            category: item.category,
+          });
+        }
+      } else {
+        // Reset flag if restocked above minThreshold
+        if (item.lowStockAlertSent) {
+          await invColl.updateOne(
+            { _id: item._id },
+            { $set: { lowStockAlertSent: false } }
+          );
+        }
+      }
+    }
+
+    if (lowStockItemsToNotify.length === 0) {
+      return { notified: false, itemsCount: 0 };
+    }
+
+    // Query admin emails from DB
+    const adminUsers = await usrColl.find({
+      role: { $regex: /^admin$/i }
+    }).toArray();
+
+    const adminEmails = new Set<string>();
+    for (const u of adminUsers) {
+      if (u.email && typeof u.email === "string") {
+        adminEmails.add(u.email);
+      }
+    }
+
+    if (process.env.ADMIN_EMAIL) {
+      adminEmails.add(process.env.ADMIN_EMAIL);
+    }
+
+    const emailList = Array.from(adminEmails);
+
+    if (emailList.length === 0) {
+      console.warn("[LowStockCheck] Low stock items detected but no admin emails found.");
+      return { notified: false, itemsCount: lowStockItemsToNotify.length, reason: "No admin emails" };
+    }
+
+    await sendLowStockAlert(emailList, lowStockItemsToNotify);
+
+    const notifiedIds = lowStockItemsToNotify.map((i) => i._id);
+    await invColl.updateMany(
+      { _id: { $in: notifiedIds } },
+      { $set: { lowStockAlertSent: true, lowStockAlertSentAt: new Date() } }
+    );
+
+    return { notified: true, itemsCount: lowStockItemsToNotify.length, recipients: emailList };
+  } catch (error) {
+    console.error("Error in checkAndNotifyLowStock:", error);
+    return { notified: false, error };
+  }
+}
+
 // ==========================================
 // Settings Endpoints (admin-configurable)
 // ==========================================
@@ -131,6 +208,7 @@ app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
           updatedAt: new Date()
         };
         const result = await inventoryCollection.insertOne(newItem);
+        checkAndNotifyLowStock(db).catch(err => console.error("Low stock check error (add):", err));
         return res.status(201).json({ success: true, message: "Ingredient added successfully", result });
       } catch (error) {
         return res.status(500).json({ success: false, error: "Failed to add ingredient" });
@@ -155,9 +233,20 @@ app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
           { _id: new ObjectId(id) },
           { $set: { ...updateData, updatedAt: new Date() } }
         );
+        checkAndNotifyLowStock(db).catch(err => console.error("Low stock check error (patch):", err));
         return res.json({ success: true, message: "Ingredient updated successfully", result });
       } catch (error) {
         return res.status(500).json({ success: false, error: "Failed to update ingredient" });
+      }
+    });
+
+    // Endpoint to manually trigger a low stock check and notify admins
+    app.post('/api/inventory/check-low-stock', async (req: Request, res: Response) => {
+      try {
+        const status = await checkAndNotifyLowStock(db);
+        return res.json({ success: true, status });
+      } catch (error) {
+        return res.status(500).json({ success: false, error: "Failed to run low stock check" });
       }
     });
 
@@ -257,6 +346,9 @@ app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
 
         // Clear the cart after successful order creation
         await cartCollection.deleteOne({ userId });
+
+        // Trigger low stock alert check after inventory deduction
+        checkAndNotifyLowStock(db).catch(err => console.error("Low stock check error (order):", err));
 
         return res.status(201).json({ success: true, message: "Order created successfully", orderId: result.insertedId, result });
       } catch (error) {
