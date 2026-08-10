@@ -265,7 +265,7 @@ app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
             quantity: item.quantity || 0,
             unit: item.unit || '',
             price: item.price || 0,
-            inStock: (item.quantity || 0) > (item.minThreshold || 0),
+            inStock: (item.quantity || 0) > 0,
           });
         }
         return res.json({ success: true, data: grouped });
