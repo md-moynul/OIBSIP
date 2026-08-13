@@ -362,6 +362,33 @@ app.patch('/api/settings', verifyToken, async (req: Request, res: Response) => {
       try {
         const id = req.params.id as string;
         const { deliveryStatus } = req.body;
+
+        if (!ObjectId.isValid(id)) {
+          return res.status(400).json({ success: false, error: "Invalid order ID" });
+        }
+
+        const existingOrder = await ordersCollection.findOne({ _id: new ObjectId(id) });
+        if (!existingOrder) {
+          return res.status(404).json({ success: false, error: "Order not found" });
+        }
+
+        const getStatusRank = (st?: string) => {
+          const norm = (st || '').toLowerCase().trim();
+          if (norm === 'delivered') return 3;
+          if (norm === 'on delivery' || norm === 'delivering' || norm === 'delivery') return 2;
+          return 1; // Default to Cooking
+        };
+
+        const currentRank = getStatusRank(existingOrder.deliveryStatus);
+        const newRank = getStatusRank(deliveryStatus);
+
+        if (newRank < currentRank) {
+          return res.status(400).json({
+            success: false,
+            error: `Cannot revert delivery status backwards from "${existingOrder.deliveryStatus || 'Cooking'}" to "${deliveryStatus}"`
+          });
+        }
+
         const result = await ordersCollection.updateOne(
           { _id: new ObjectId(id) },
           { $set: { deliveryStatus, updatedAt: new Date() } }
