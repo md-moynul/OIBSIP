@@ -26,11 +26,27 @@ interface Order {
   items?: OrderItem[];
 }
 
+function getStatusRank(status?: string): number {
+  const norm = (status || '').toLowerCase().trim();
+  if (norm === 'delivered') return 3;
+  if (norm === 'on delivery' || norm === 'delivering' || norm === 'delivery') return 2;
+  return 1; // Default to Cooking (1)
+}
+
 export default function AdminOrdersClient({ initialOrders }: { initialOrders: Order[] }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
+    const targetOrder = orders.find((o) => o._id === orderId);
+    const currentRank = getStatusRank(targetOrder?.deliveryStatus);
+    const newRank = getStatusRank(newStatus);
+
+    if (newRank < currentRank) {
+      toast.error(`Cannot revert delivery status backwards from "${targetOrder?.deliveryStatus || 'Cooking'}" to "${newStatus}"`);
+      return;
+    }
+
     setUpdatingId(orderId);
 
     // Optimistic UI update
@@ -45,9 +61,9 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Or
       } else {
         throw new Error(res?.error || 'Failed to update status');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating order status:', err);
-      toast.error('Failed to update status in database');
+      toast.error(err?.message || 'Failed to update status in database');
     } finally {
       setUpdatingId(null);
     }
@@ -90,6 +106,7 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Or
               {orders.map((order) => {
                 const isUpdating = updatingId === order._id;
                 const status = order.deliveryStatus || 'Cooking';
+                const currentRank = getStatusRank(status);
 
                 return (
                   <tr key={order._id || order.stripeSessionId} className="hover:bg-gray-50/50">
@@ -122,20 +139,28 @@ export default function AdminOrdersClient({ initialOrders }: { initialOrders: Or
                     <td className="px-6 py-4">
                       {/* Delivery Status Dropdown */}
                       <select
-                        disabled={isUpdating}
+                        disabled={isUpdating || currentRank === 3}
                         value={status}
                         onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                        className={`rounded-xl px-3 py-1.5 text-xs font-bold border outline-hidden transition-all cursor-pointer ${
-                          status === 'Delivered'
-                            ? 'bg-green-50 border-green-300 text-green-800'
-                            : status === 'On Delivery'
-                            ? 'bg-blue-50 border-blue-300 text-blue-800'
-                            : 'bg-amber-50 border-amber-300 text-amber-800'
+                        className={`rounded-xl px-3 py-1.5 text-xs font-bold border outline-hidden transition-all ${
+                          currentRank === 3
+                            ? 'cursor-not-allowed bg-green-100 border-green-300 text-green-800 opacity-90'
+                            : 'cursor-pointer ' + (
+                                status === 'On Delivery'
+                                  ? 'bg-blue-50 border-blue-300 text-blue-800'
+                                  : 'bg-amber-50 border-amber-300 text-amber-800'
+                              )
                         }`}
                       >
-                        <option value="Cooking">👨‍🍳 Cooking</option>
-                        <option value="On Delivery">🛵 On Delivery</option>
-                        <option value="Delivered">🎉 Delivered</option>
+                        <option value="Cooking" disabled={currentRank > 1}>
+                          👨‍🍳 Cooking
+                        </option>
+                        <option value="On Delivery" disabled={currentRank > 2}>
+                          🛵 On Delivery
+                        </option>
+                        <option value="Delivered">
+                          🎉 Delivered
+                        </option>
                       </select>
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-500">
