@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "@heroui/styles"; 
+
+:root {
+  --color-bg: #F7F4EC;
+  --color-text: #262322;
+  --color-text-muted: #26232299;
+  --color-primary: #E63125;
+  --color-accent: #F5B301;
+  --color-border: #26232222;
+  --color-surface: #FFFFFF;
+}
+
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-primary: var(--color-primary);
+  --color-accent: var(--color-accent);
+  --color-border: var(--color-border);
+  --color-surface: var(--color-surface);
+}
