@@ -313,7 +313,7 @@ export default function AddPizzaPage() {
                 const select = document.getElementById('ingredientSelect') as HTMLSelectElement;
                 if (select.value) addRecipeItem(select.value);
               }}
-              className="rounded-xl bg-bg border border-border px-4 text-sm font-semibold"
+              className="rounded-xl bg-bg text-red-500 px-4 text-sm font-semibold"
             >
               Add
             </Button>
