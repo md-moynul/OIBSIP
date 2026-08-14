@@ -13,7 +13,7 @@ import {
   Checkbox,
   Button,
 } from "@heroui/react";
-import { Envelope, LockOpen, Eye, EyeSlash, MapPin, Star, Clock } from "@gravity-ui/icons";
+import { Envelope, LockOpen, Eye, EyeSlash, MapPin, Star, Clock, ShieldKeyhole, Person } from "@gravity-ui/icons";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
@@ -50,6 +50,25 @@ export default function SignInPage() {
     provider: "google",
   });
 }
+
+  const handleDemoLogin = async (role: "admin" | "user") => {
+    const email = role === "admin" ? "mdmoynulislam.dev@gmail.com" : "tonul@mailinator.com";
+    const password = "Pa$$w0rd!";
+
+    const { data, error } = await authClient.signIn.email({
+      email,
+      password,
+      rememberMe: true,
+    });
+
+    if (data?.token) {
+      toast.success(`Signed in as demo ${role}`);
+      router.push("/");
+    }
+    if (error) {
+      toast.error(`Demo login failed: ${error.message}`);
+    }
+  };
 
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-2">
@@ -183,6 +202,23 @@ export default function SignInPage() {
             <span className="h-px flex-1 bg-border" />
             <span className="font-mono text-xs text-text-muted">OR</span>
             <span className="h-px flex-1 bg-border" />
+          </div>
+
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            <Button
+              onPress={() => handleDemoLogin("admin")}
+              className="flex items-center justify-center gap-2 rounded-xl border-border py-2.5 text-sm font-medium text-text bg-backdrop/10"
+            >
+              <ShieldKeyhole className="h-4 w-4" />
+              Demo Admin
+            </Button>
+            <Button
+              onPress={() => handleDemoLogin("user")}
+              className="flex items-center justify-center gap-2 rounded-xl border-border py-2.5 text-sm font-medium text-text bg-backdrop/10"
+            >
+              <Person className="h-4 w-4" />
+              Demo User
+            </Button>
           </div>
 
           <Button
